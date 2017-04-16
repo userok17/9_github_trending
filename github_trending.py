@@ -1,7 +1,5 @@
 import requests
 from datetime import datetime, timedelta
-import sys
-from pprint import pprint
 
 
 class LimitExceeded(Exception):
@@ -31,32 +29,40 @@ def get_open_issues_amount(repo_owner, repo_name):
     raise LimitExceeded(repo_owner, repo_name)
 
 
+
+def print_trending_repository(repository):
+    created_at = datetime.strptime(repository['created_at'], '%Y-%m-%dT%H:%M:%SZ')
+    created_at = created_at.strftime('%d.%m.%Y %H:%M:%S')
+    
+    print('Название: {}'.format(repository['name']))
+    print('Дата создания: {}'.format(created_at))
+    print('Ссылка: {}'.format(repository['html_url']))
+    print('Количество форков: {}'.format(repository['forks_count']))
+    print('Количество звезд: {}'.format(repository['stargazers_count']))
+    print('Количество открытых задач: {}'.format(repository['open_issues_count']))
+
+def print_open_issues_amount(repository):
+    if repository['open_issues_count']:
+        try:
+            issues = get_open_issues_amount(repository['owner']['login'], repository['name'])
+        except LimitExceeded as error:
+            print(error)
+        else:
+            if repository['open_issues_count'] and issues:
+                print('Список открытых задач:')
+                for issue in issues:
+                    print('\tТема: {}'.format(issue['title']))    
+
+
+
+
 def main():
     top_size = 20
     trending_repositories = get_trending_repositories(top_size)
 
-    for repository in trending_repositories['items']:
-        created_at = datetime.strptime(repository['created_at'], '%Y-%m-%dT%H:%M:%SZ')
-        created_at = created_at.strftime('%d.%m.%Y %H:%M:%S')
-        
-        print('Название: {}'.format(repository['name']))
-        print('Дата создания: {}'.format(created_at))
-        print('Ссылка: {}'.format(repository['html_url']))
-        print('Количество форков: {}'.format(repository['forks_count']))
-        print('Количество звезд: {}'.format(repository['stargazers_count']))
-        print('Количество открытых задач: {}'.format(repository['open_issues_count']))
-
-        if repository['open_issues_count']:
-            try:
-                issues = get_open_issues_amount(repository['owner']['login'], repository['name'])
-            except LimitExceeded as error:
-                print(error)
-            else:
-                if repository['open_issues_count'] and issues:
-                    print('Список открытых задач:')
-                    for issue in issues:
-                        print('\tТема: {}'.format(issue['title']))        
-
+    for repository in trending_repositories['items']:        
+        print_trending_repository(repository)
+        print_open_issues_amount(repository)
         print()
 
 if __name__ == '__main__':
