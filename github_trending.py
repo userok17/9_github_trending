@@ -2,16 +2,10 @@ import requests
 from datetime import datetime, timedelta
 
 
-class LimitExceeded(Exception):
-    def __init__(self, repo_owner, repo_name):
-        url = 'https://github.com/{}/{}/issues'.format(repo_owner, repo_name)
-        message = 'Лимит превышен. Открытые задачи можете посмотреть по ссылке {}'.format(url)
-        super().__init__(message)
-
-def get_trending_repositories(top_size):
+def get_trending_repositories(top_size, days):
     now = datetime.now()
-    seven_days_ago = now - timedelta(days=7)
-    date_created = seven_days_ago.strftime('%Y-%m-%d')
+    timedelta_days = now - timedelta(days=days)
+    date_created = timedelta_days.strftime('%Y-%m-%d')
     params = {
         'q': 'created:>{}'.format(date_created),
         'sort': 'stars',
@@ -22,11 +16,13 @@ def get_trending_repositories(top_size):
     return request.json()
 
 
-def get_open_issues_amount(repo_owner, repo_name):
+def get_list_issues(repo_owner, repo_name):
     request = requests.get('https://api.github.com/repos/{}/{}/issues'.format(repo_owner, repo_name))
     if request.status_code == requests.codes.ok:
         return request.json()
-    raise LimitExceeded(repo_owner, repo_name)
+    url = 'https://github.com/{}/{}/issues'.format(repo_owner, repo_name)
+    error = [{'title': 'Лимит превышен. Открытые задачи можете посмотреть по ссылке {}'.format(url)}]
+    return error
 
 
 
@@ -41,29 +37,25 @@ def print_trending_repository(repository):
     print('Количество звезд: {}'.format(repository['stargazers_count']))
     print('Количество открытых задач: {}'.format(repository['open_issues_count']))
 
-def print_open_issues_amount(repository):
-    if repository['open_issues_count']:
-        try:
-            issues = get_open_issues_amount(repository['owner']['login'], repository['name'])
-        except LimitExceeded as error:
-            print(error)
-        else:
-            if repository['open_issues_count'] and issues:
-                print('Список открытых задач:')
-                for issue in issues:
-                    print('\tТема: {}'.format(issue['title']))    
+def print_list_issues(repository, issues):
+    if repository['open_issues_count'] and issues:
+        print('Список открытых задач:')
+        for issue in issues:
+            print('\tТема: {}'.format(issue['title']))    
 
 
 
 
 def main():
     top_size = 20
-    trending_repositories = get_trending_repositories(top_size)
+    days = 7
+    trending_repositories = get_trending_repositories(top_size, days)
 
     for repository in trending_repositories['items']:        
-        print_trending_repository(repository)
-        print_open_issues_amount(repository)
-        print()
+        if repository['open_issues_count']:
+            issues = get_list_issues(repository['owner']['login'], repository['name'])
+            print_list_issues(repository, issues)
+            print()
 
 if __name__ == '__main__':
     main()
