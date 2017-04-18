@@ -47,7 +47,7 @@ def print_list_issues(repository, issues):
 
 
 def main():
-    top_size = 60
+    top_size = 20
     days = 7
     trending_repositories = get_trending_repositories(top_size, days)
 
