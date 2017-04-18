@@ -1,6 +1,6 @@
 import requests
 from datetime import datetime, timedelta
-
+import pprint
 
 def get_trending_repositories(top_size, days):
     now = datetime.now()
@@ -18,12 +18,12 @@ def get_trending_repositories(top_size, days):
 
 def get_list_issues(repo_owner, repo_name):
     request = requests.get('https://api.github.com/repos/{}/{}/issues'.format(repo_owner, repo_name))
+    
     if request.status_code == requests.codes.ok:
         return request.json()
-    url = 'https://github.com/{}/{}/issues'.format(repo_owner, repo_name)
-    error = [{'title': 'Лимит превышен. Открытые задачи можете посмотреть по ссылке {}'.format(url)}]
-    return error
-
+    elif request.status_code == 403:
+        error = request.json()['message']
+        raise Exception(error)
 
 
 def print_trending_repository(repository):
@@ -47,7 +47,7 @@ def print_list_issues(repository, issues):
 
 
 def main():
-    top_size = 20
+    top_size = 60
     days = 7
     trending_repositories = get_trending_repositories(top_size, days)
 
