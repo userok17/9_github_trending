@@ -3,8 +3,7 @@ from datetime import datetime, timedelta
 
 
 class LimitExceeded(Exception):
-    def __init__(self, message):
-        super().__init__(message)
+    pass
 
 def get_trending_repositories(top_size, days):
     now = datetime.now()
@@ -29,11 +28,11 @@ def get_list_issues(repo_owner, repo_name):
         error = request.json()['message']
         raise LimitExceeded(error)
 
-def get_list_issues_or_error(repo_owner, repo_name):
+def get_list_issues_or_none(repo_owner, repo_name):
     try:
         return get_list_issues(repo_owner, repo_name)
     except LimitExceeded as error:
-        return [{'title': error}]
+        return None
 
 
 def print_trending_repository(repository):
@@ -61,11 +60,12 @@ def main():
     days = 7
     trending_repositories = get_trending_repositories(top_size, days)
 
-    for repository in trending_repositories['items']:        
+    for repository in trending_repositories['items']:
+        print_trending_repository(repository)
         if repository['open_issues_count']:
-            issues = get_list_issues_or_error(repository['owner']['login'], repository['name'])
+            issues = get_list_issues_or_none(repository['owner']['login'], repository['name'])
             print_list_issues(repository, issues)
-            print()
+        print()
 
 if __name__ == '__main__':
     main()
